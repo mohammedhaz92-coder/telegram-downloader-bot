@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-# تحديث النظام وتثبيت ffmpeg
+# تحديث النظام وتثبيت ffmpeg الضروري للتحويل
 RUN apt-get update && \
     apt-get install -y ffmpeg && \
     apt-get clean && \
