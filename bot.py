@@ -3,8 +3,10 @@ import telebot
 import yt_dlp
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# التوكن الخاص بك
-BOT_TOKEN = "8985088016:AAG4DYONt_6mUpUVvQ-BAK4Qr1GP1zWwELY"
+# التوكن محفوظ في Replit Secrets، وليس في الكود المصدري
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN is required. Add a new Telegram bot token to Replit Secrets.")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -27,17 +29,20 @@ def handle_message(message):
     # إرسال أزرار اختيار الصيغة (فيديو أو صوت)
     markup = InlineKeyboardMarkup()
     markup.row(
-        InlineKeyboardButton("🎬 تحميل فيديو", callback_data=f"video|{url}"),
-        InlineKeyboardButton("🎵 تحميل MP3", callback_data=f"audio|{url}")
+        InlineKeyboardButton("🎬 تحميل فيديو", callback_data="video"),
+        InlineKeyboardButton("🎵 تحميل MP3", callback_data="audio")
     )
     bot.reply_to(message, "📥 ماذا تريد أن تفعل بهذا الرابط؟", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback(call):
-    # فصل البيانات لمعرفة هل الطلب فيديو أم صوت
-    data = call.data.split("|", 1)
-    action = data[0]
-    url = data[1]
+    # الرابط موجود في الرسالة الأصلية التي رد عليها البوت
+    action = call.data
+    original = call.message.reply_to_message
+    url = original.text.strip() if original and original.text else ""
+    if action not in ("video", "audio") or not url.startswith(("http://", "https://")):
+        bot.answer_callback_query(call.id, "❌ انتهت صلاحية الطلب. أرسل الرابط مرة أخرى.")
+        return
 
     bot.delete_message(call.message.chat.id, call.message.message_id)
     msg = bot.send_message(call.message.chat.id, "⏳ جاري التحميل والمعالجة... يرجى الانتظار.")
